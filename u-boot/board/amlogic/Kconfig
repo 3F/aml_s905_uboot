@@ -11,13 +11,52 @@ config GXB_P201_V1
 	bool "Support amlogic gxbaby p200(reference) v1 board"
 	default n
 
+config GXTVBB_SKT_V1
+	bool "Support amlogic gxtv baby socket v1 board"
+	default n
+
+config GXTVBB_P301_V1
+	bool "Support amlogic gxtv baby p301(reference) v1 board"
+	default n
+
+config GXTVBB_P300_V1
+	bool "Support amlogic gxtv baby p300(develop) v1 board"
+	default n
+
+config GXTVBB_P310_V1
+	bool "Support amlogic gxtv baby P310 socket v1 board"
+	default n
+
+config GXTVBB_P311_V1
+	bool "Support amlogic gxtv baby P311 socket v1 board"
+	default n
+
+config GXTVBB_9023_SKT_V1
+	bool "Support amlogic gxtv baby 9023 socket v1 board"
+	default n
+
+config GXTVBB_T966_SKT_V1
+	bool "Support amlogic gxtv baby 9023 socket v1 board"
+	default n
+
+config GXL_SKT_V1
+	bool "Support amlogic gxl socket v1 board"
+	default n
+
+config GXL_P212_V1
+	bool "Support amlogic gxl p212 board"
+	default n
+
 config PXP_EMULATOR
 	bool "Support pxp environment"
 	default n
 
+config SUPPORT_CUSOTMER_BOARD
+	bool "Customer board support"
+
 config ODROID_C2
 	bool "Support Hardkernel ODROID-C2 board"
- 	default n
+	default n
 
 if GXB_SKT_V1
 source "board/amlogic/gxb_skt_v1/Kconfig"
@@ -29,6 +68,42 @@ endif
 
 if GXB_P201_V1
 source "board/amlogic/gxb_p201_v1/Kconfig"
+endif
+
+if GXTVBB_SKT_V1
+source "board/amlogic/gxtvbb_skt_v1/Kconfig"
+endif
+
+if GXTVBB_P301_V1
+source "board/amlogic/gxtvbb_p301_v1/Kconfig"
+endif
+
+if GXTVBB_P300_V1
+source "board/amlogic/gxtvbb_p300_v1/Kconfig"
+endif
+
+if GXTVBB_P310_V1
+source "board/amlogic/gxtvbb_p310_v1/Kconfig"
+endif
+
+if GXTVBB_P311_V1
+source "board/amlogic/gxtvbb_p311_v1/Kconfig"
+endif
+
+if GXTVBB_9023_SKT_V1
+source "board/amlogic/gxtvbb_9023_skt_v1/Kconfig"
+endif
+
+if GXTVBB_T966_SKT_V1
+source "board/amlogic/gxtvbb_t966_skt_v1/Kconfig"
+endif
+
+if GXL_SKT_V1
+source "board/amlogic/gxl_skt_v1/Kconfig"
+endif
+
+if GXL_P212_V1
+source "board/amlogic/gxl_p212_v1/Kconfig"
 endif
 
 if ODROID_C2

@@ -6,6 +6,7 @@
  */
 #include "../include/phynand.h"
 #include <asm/arch/secure_apb.h>
+#include <asm/cpu_id.h>
 
 extern int aml_ubootenv_init(struct amlnand_chip *aml_chip);
 #if (AML_CFG_DTB_RSV_EN)
@@ -343,6 +344,7 @@ void amlnand_release_device(struct amlnand_chip *aml_chip)
 void nand_get_chip(void *chip)
 {
 	/* fixme, */
+	cpu_id_t cpu_id = get_cpu_id();
 
 	/* pull up enable */
 	aml_nand_dbg("PAD_PULL_UP_EN_REG2 0x%x, PAD_PULL_UP_REG2 0x%x, PERIPHS_PIN_MUX_4 0x%x", P_PAD_PULL_UP_EN_REG2, P_PAD_PULL_UP_REG2, P_PERIPHS_PIN_MUX_4);
@@ -351,11 +353,16 @@ void nand_get_chip(void *chip)
 	/* pull direction, dqs pull down */
 	AMLNF_SET_REG_MASK(P_PAD_PULL_UP_REG2, 0x8700);
 	/* switch pinmux */
-	//AMLNF_SET_REG_MASK(P_PERIPHS_PIN_MUX_4, ((0x1<<30) | (0x3fff<<20)));
-	AMLNF_SET_REG_MASK(P_PERIPHS_PIN_MUX_4, ((0x1<<30) | (0x3ff<<20)));
-	AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_0, (0x1 << 19));
-	AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_4, (0x3 << 18));
-	AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_5, (0xF));
+	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_GXL) {
+		AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_7,
+			((0x7 << 28) | (0x1FF << 15) | (0xF << 10)));
+		AMLNF_SET_REG_MASK(P_PERIPHS_PIN_MUX_7, ((0x1<<31) | 0xff));
+	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_GXBB) {
+		AMLNF_SET_REG_MASK(P_PERIPHS_PIN_MUX_4, ((0x1<<30) | (0x3ff<<20)));
+		AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_0, (0x1 << 19));
+		AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_4, (0x3 << 18));
+		AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_5, (0xF));
+	}
 	aml_nand_dbg("PAD_PULL_UP_EN_REG2 0x%x, PAD_PULL_UP_REG2 0x%x, PERIPHS_PIN_MUX_4 0x%x", AMLNF_READ_REG(P_PAD_PULL_UP_EN_REG2), AMLNF_READ_REG(P_PAD_PULL_UP_REG2), AMLNF_READ_REG(P_PERIPHS_PIN_MUX_4));
 	return ;
 }
@@ -364,11 +371,17 @@ void nand_release_chip(void *chip)
 {
 	struct amlnand_chip *aml_chip = (struct amlnand_chip *)chip;
 	struct hw_controller * controller;
+	cpu_id_t cpu_id = get_cpu_id();
+
 	controller = &aml_chip->controller;
 	NFC_SEND_CMD_STANDBY(controller, 5);
 	/* do not release cs0 & cs1 */
-	//fixme, dbg code here.
-	//AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_2, ((0x33f<<20) | (0x1<< 30)));
+	//fixme,
+	if (cpu_id.family_id == MESON_CPU_MAJOR_ID_GXL) {
+		//AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_7, ((0x1<<30) | (0x3f << 30)));
+	} else if (cpu_id.family_id == MESON_CPU_MAJOR_ID_GXBB) {
+		//AMLNF_CLEAR_REG_MASK(P_PERIPHS_PIN_MUX_2, ((0x33f<<20) | (0x1<< 30)));
+	}
 	return;
 }
 
@@ -452,11 +465,13 @@ void nand_boot_info_prepare(struct amlnand_phydev *phydev,
 {
 	struct amlnand_chip *aml_chip = (struct amlnand_chip *)phydev->priv;
 	struct nand_flash *flash = &(aml_chip->flash);
-	/* struct phydev_ops *devops = &(phydev->ops); */
+	struct phydev_ops *devops = &(phydev->ops);
 	struct hw_controller *controller = &(aml_chip->controller);
 	struct en_slc_info *slc_info = NULL;
 	int i, nand_read_info;
 	u32 en_slc, configure_data;
+	u32 boot_num = 1, each_boot_pages;
+	u32 valid_pages = BOOT_COPY_NUM * BOOT_PAGES_PER_COPY;
 
 	nand_page0_t * p_nand_page0 = NULL;
 	ext_info_t * p_ext_info = NULL;
@@ -507,14 +522,38 @@ void nand_boot_info_prepare(struct amlnand_phydev *phydev,
 	/* chip_num occupy the lowest 2 bit */
 	nand_read_info = controller->chip_num;
 
+	/*
+	make it
+	1)calu the number of boot saved and pages each boot needs.
+	2)the number is 2*n but less than 4.
+	*/
+	aml_nand_msg("valid_pages = %d en_slc = %d devops->len = %llx",
+		valid_pages,
+		en_slc, devops->len);
+	valid_pages = (en_slc)?(valid_pages>>1):valid_pages;
+	for (i = 1;
+		i < ((valid_pages*flash->pagesize)/devops->len + 1); i++) {
+		if (((valid_pages*flash->pagesize)/(2*i) >= devops->len)
+				&& (boot_num < 4))
+			boot_num <<= 1;
+		else
+			break;
+	}
+	each_boot_pages = valid_pages/boot_num;
+	each_boot_pages = (en_slc)?(each_boot_pages<<1):each_boot_pages;
+
 	p_ext_info->read_info = nand_read_info;
 	p_ext_info->new_type = aml_chip->flash.new_type;
 	p_ext_info->page_per_blk = flash->blocksize / flash->pagesize;
 	p_ext_info->ce_mask = aml_chip->ce_bit_mask;
 	p_ext_info->xlc = 2;
+	p_ext_info->boot_num = boot_num;
+	p_ext_info->each_boot_pages = each_boot_pages;
 
 	printk("new_type = 0x%x\n", p_ext_info->new_type);
 	printk("page_per_blk = 0x%x\n", p_ext_info->page_per_blk);
+	aml_nand_msg("boot_num = %d each_boot_pages = %d", boot_num,
+		each_boot_pages);
 }
 
 void uboot_set_ran_mode(struct amlnand_phydev *phydev)
@@ -700,7 +739,7 @@ int aml_sys_info_error_handle(struct amlnand_chip *aml_chip)
 
 #ifdef AML_NAND_UBOOT
 /*fixme, */
-int info_disprotect = 0;
+extern int info_disprotect;
 
 void amlnf_disprotect(char * name)
 {

@@ -100,8 +100,8 @@
 #define CONFIG_BOOTCOMMAND
 
 //#define CONFIG_ENV_IS_NOWHERE  1
-#define CONFIG_ENV_SIZE			(32 * SZ_1K)	/* 32kB */
-#define CONFIG_ENV_OFFSET		(720 * SZ_1K)	/* FIXME: should be
+#define CONFIG_ENV_SIZE			(64 * SZ_1K)	/* 32kB */
+#define CONFIG_ENV_OFFSET		(1024 * SZ_1K)	/* FIXME: should be
 							   close to U-boot image
 							   size to save space */
 #define CONFIG_FIT			1

@@ -80,6 +80,7 @@ obj-$(CONFIG_CMD_CBFS) += cmd_cbfs.o
 obj-$(CONFIG_CMD_CLK) += cmd_clk.o
 obj-$(CONFIG_CMD_CONSOLE) += cmd_console.o
 obj-$(CONFIG_CMD_SARADC) += cmd_saradc.o
+obj-$(CONFIG_CMD_SARADC) += cmd_forceupdate.o
 obj-$(CONFIG_CMD_CPLBINFO) += cmd_cplbinfo.o
 obj-$(CONFIG_DATAFLASH_MMC_SELECT) += cmd_dataflash_mmc_mux.o
 obj-$(CONFIG_CMD_DATE) += cmd_date.o
@@ -127,11 +128,15 @@ obj-$(CONFIG_CMD_CRAMFS) += cmd_cramfs.o
 obj-$(CONFIG_CMD_LDRINFO) += cmd_ldrinfo.o
 obj-$(CONFIG_CMD_LED) += cmd_led.o
 obj-$(CONFIG_CMD_LICENSE) += cmd_license.o
+ifdef CONFIG_BOOTLOADER_CONTROL_BLOCK
+obj-y += cmd_bcb.o
+endif
 obj-y += cmd_load.o
 obj-$(CONFIG_LOGBUFFER) += cmd_log.o
 obj-$(CONFIG_ID_EEPROM) += cmd_mac.o
 obj-$(CONFIG_CMD_MD5SUM) += cmd_md5sum.o
 obj-$(CONFIG_CMD_MEMORY) += cmd_mem.o
+obj-$(CONFIG_CMD_MEMORY) += cmd_mem_mask.o
 obj-$(CONFIG_CMD_IO) += cmd_io.o
 obj-$(CONFIG_CMD_MFSL) += cmd_mfsl.o
 obj-$(CONFIG_MII) += miiphyutil.o
@@ -202,7 +207,7 @@ obj-$(CONFIG_CMD_SPL) += cmd_spl.o
 obj-$(CONFIG_CMD_ZIP) += cmd_zip.o
 obj-$(CONFIG_CMD_ZFS) += cmd_zfs.o
 obj-$(CONFIG_AML_VPU) += cmd_vpu.o
-obj-$(CONFIG_CMD_DDR_TEST) += cmd_d2pll.o
+obj-$(CONFIG_CMD_DDR_D2PLL) += cmd_d2pll.o
 obj-$(CONFIG_CMD_DDR_TEST) += cmd_ddr_test.o
 
 # others
@@ -302,5 +307,7 @@ obj-$(CONFIG_CMD_JTAG) += cmd_jtag.o
 obj-$(CONFIG_AML_OSD) += cmd_osd.o
 obj-$(CONFIG_AML_CVBS) += cmd_cvbs.o
 obj-$(CONFIG_AML_VOUT) += cmd_vout.o
+obj-$(CONFIG_AML_LCD) += cmd_lcd.o
+obj-$(CONFIG_CMD_RSVMEM) += cmd_rsvmem.o
 
 CFLAGS_env_embedded.o := -Wa,--no-warn -DENV_CRC=$(shell tools/envcrc 2>/dev/null)

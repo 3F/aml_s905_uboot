@@ -42,11 +42,20 @@
 #define CONFIG_AML_MESON_SERIAL   1
 #define CONFIG_SERIAL_MULTI		1
 
+//Enable ir remote wake up for bl30
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 3
+#define CONFIG_IR_REMOTE_USE_PROTOCOL 0         // 0:nec  1:duokan  2:Toshiba 3:rca 4:rcmm
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0XE51AFB04 //amlogic tv ir --- power
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0XBB44FB04 //amlogic tv ir --- ch+
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xF20DFE01 //amlogic tv ir --- ch-
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4 0xFFFFFFFF
+
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL5 0x3ac5bd02
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"storeboot=\0"
-#define CONFIG_BOOTARGS "init=/init console=ttyS0,115200 no_console_suspend earlyprintk=aml-uart,0xc81004c0 ramoops.mem_address=0x20000000 ramoops.mem_size=0x100000 ramoops.record_size=0x8000 ramoops.console_size=0x4000"
+#define CONFIG_BOOTARGS "init=/init console=ttyS0,115200 no_console_suspend earlyprintk=aml-uart,0xc81004c0 ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 "
 #define CONFIG_BOOTCOMMAND "run storeboot"
 
 //#define CONFIG_ENV_IS_NOWHERE  1
@@ -76,7 +85,10 @@
 #define CONFIG_DDR_ZQ_POWER_DOWN
 #define CONFIG_DDR_POWER_DOWN_PHY_VREF
 /* ddr detection */
-#define CONFIG_DDR_SIZE_AUTO_DETECT		0
+#define CONFIG_DDR_SIZE_AUTO_DETECT		0 //0:disable, 1:enable
+/* ddr functions */
+#define CONFIG_CMD_DDR_D2PLL			0 //0:disable, 1:enable. d2pll cmd
+#define CONFIG_CMD_DDR_TEST				0 //0:disable, 1:enable. ddrtest cmd
 
 /* storage: emmc/nand/sd */
 #define		CONFIG_STORE_COMPATIBLE 1
@@ -93,6 +105,8 @@
 	#define 	CONFIG_GENERIC_MMC 1
 	#define 	CONFIG_CMD_MMC 1
 	#define	CONFIG_SYS_MMC_ENV_DEV 1
+	#define CONFIG_EMMC_DDR52_EN 1
+	#define CONFIG_EMMC_DDR52_CLK 35000000
 #endif
 #define		CONFIG_PARTITIONS 1
 #define 	CONFIG_SYS_NO_FLASH  1
@@ -164,15 +178,12 @@
 /* net */
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
-	#define CONFIG_AML_ETHERNET 1
+	#define CONFIG_DESIGNWARE_ETH 1
+	#define CONFIG_PHYLIB	1
 	#define CONFIG_NET_MULTI 1
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
-	//#define CONFIG_NET_RGMII
-	//	//#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
-	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
-	#define IP101PHY    1                   /*to link /driver/net/aml_ethernet.c*/
 	#define CONFIG_HOSTNAME        arm_gxbb
 	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
 	#define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
@@ -250,6 +261,14 @@
 
 //build with uboot auto test
 //#define CONFIG_AML_UBOOT_AUTO_TEST 1
+
+//board customer ID
+//#define CONFIG_CUSTOMER_ID  (0x6472616F624C4D41)
+
+#if defined(CONFIG_CUSTOMER_ID)
+  #undef CONFIG_AML_CUSTOMER_ID
+  #define CONFIG_AML_CUSTOMER_ID  CONFIG_CUSTOMER_ID
+#endif
 
 #endif
 

@@ -82,12 +82,17 @@ void aml_sd_cfg_swth(struct mmc *mmc)
 		clk = SD_EMMC_CLKSRC_24M;
 		clk_src = 0;
 	}
-	clk_div= clk / mmc->clock;
 
 	if (mmc->clock<mmc->cfg->f_min)
 	    mmc->clock=mmc->cfg->f_min;
 	if (mmc->clock>mmc->cfg->f_max)
 	    mmc->clock=mmc->cfg->f_max;
+
+	clk_div= clk / mmc->clock;
+#if CONFIG_EMMC_DDR52_EN
+	if (mmc->ddr_mode)
+		clk_div /= 2;
+#endif
 
 	sd_emmc_clkc =((0 << Cfg_irq_sdio_sleep_ds) |
 						(0 << Cfg_irq_sdio_sleep) |
@@ -108,7 +113,9 @@ void aml_sd_cfg_swth(struct mmc *mmc)
     sd_emmc_cfg->bl_len = 9;      //512byte block length
     sd_emmc_cfg->resp_timeout = 7;      //64 CLK cycle, here 2^8 = 256 clk cycles
     sd_emmc_cfg->rc_cc = 4;      //1024 CLK cycle, Max. 100mS.
-    /* sd_emmc_cfg->ddr = mmc->ddr_mode; */
+#if CONFIG_EMMC_DDR52_EN
+    sd_emmc_cfg->ddr = mmc->ddr_mode;
+#endif
     sd_emmc_reg->gcfg = vconf;
 
 	sd_debug("bus_width=%d; tclk_div=%d; tclk=%d;sd_clk=%d\n",
@@ -362,25 +369,42 @@ int aml_sd_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct	mmc_data *data)
         sd_emmc_reg->gcmd_dat = desc_cur->data_addr;
         sd_emmc_reg->gcmd_arg = desc_cur->cmd_arg;
 #endif
-        //waiting end of chain
+    //waiting end of chain
         while (1) {
                 status_irq = sd_emmc_reg->gstatus;
-                if (status_irq_reg->end_of_chain)
+				if (status_irq_reg->end_of_chain)
                         break;
         }
-
-        if (status_irq_reg->rxd_err)
+        if (status_irq_reg->rxd_err) {
                 ret |= SD_EMMC_RXD_ERROR;
-        if (status_irq_reg->txd_err)
+                printf("emmc/sd read error, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
+        if (status_irq_reg->txd_err) {
                 ret |= SD_EMMC_TXD_ERROR;
-        if (status_irq_reg->desc_err)
+                printf("emmc/sd write error, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
+        if (status_irq_reg->desc_err) {
                 ret |= SD_EMMC_DESC_ERROR;
-        if (status_irq_reg->resp_err)
+                printf("emmc/sd descripter error, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
+        if (status_irq_reg->resp_err) {
                 ret |= SD_EMMC_RESP_CRC_ERROR;
-        if (status_irq_reg->resp_timeout)
+                printf("emmc/sd response crc error, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
+        if (status_irq_reg->resp_timeout) {
                 ret |= SD_EMMC_RESP_TIMEOUT_ERROR;
-        if (status_irq_reg->desc_timeout)
+                printf("emmc/sd response timeout, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
+        if (status_irq_reg->desc_timeout) {
                 ret |= SD_EMMC_DESC_TIMEOUT_ERROR;
+                printf("emmc/sd descripter timeout, cmd%d, status=0x%x\n",
+                    cmd->cmdidx, status_irq);
+        }
         if (data) {
                 if ((data->blocks*data->blocksize <0x200) && (data->flags == MMC_DATA_READ)) {
                         memcpy(data->dest, (const void *)sd_emmc_reg->gping,data->blocks*data->blocksize);
@@ -465,9 +489,17 @@ void sd_emmc_register(struct aml_card_sd_info * aml_priv)
 
 	cfg->voltages = MMC_VDD_33_34|MMC_VDD_32_33|MMC_VDD_31_32|MMC_VDD_165_195;
 	cfg->host_caps = MMC_MODE_8BIT|MMC_MODE_4BIT | MMC_MODE_HS_52MHz | MMC_MODE_HS |
+#if CONFIG_EMMC_DDR52_EN
+			     MMC_MODE_HC | MMC_MODE_DDR_52MHz;
+#else
 			     MMC_MODE_HC;
+#endif
 	cfg->f_min = 400000;
+#if CONFIG_EMMC_DDR52_EN
+	cfg->f_max = CONFIG_EMMC_DDR52_CLK;
+#else
 	cfg->f_max = 50000000;
+#endif
 	cfg->b_max = 256;
 	mmc_create(cfg,aml_priv);
 }

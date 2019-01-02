@@ -38,6 +38,7 @@
 #include <amlogic/hdmi.h>
 #endif
 #include <asm/arch/eth_setup.h>
+#include <phy.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -108,12 +109,12 @@ static void setup_net_chip(void)
 }
 
 extern struct eth_board_socket* eth_board_setup(char *name);
-extern int aml_eth_init(bd_t *bis);
+extern int designware_initialize(ulong base_addr, u32 interface);
 int board_eth_init(bd_t *bis)
 {
 	setup_net_chip();
 	udelay(1000);
-	aml_eth_init(bis);
+	designware_initialize(ETH_BASE, PHY_INTERFACE_MODE_RMII);
 
 	return 0;
 }
@@ -403,9 +404,11 @@ int board_init(void)
 #ifdef CONFIG_AML_VPU
 	vpu_probe();
 #endif
+#ifndef CONFIG_AML_IRDETECT_EARLY
 #ifdef CONFIG_AML_HDMITX20
 	hdmi_tx_set_hdmi_5v();
 	hdmi_tx_init();
+#endif
 #endif
 #ifdef CONFIG_AML_NAND
 	extern int amlnf_init(unsigned char flag);
@@ -413,10 +416,36 @@ int board_init(void)
 #endif
 	return 0;
 }
+#ifdef CONFIG_AML_IRDETECT_EARLY
+#ifdef CONFIG_AML_HDMITX20
+static int do_hdmi_init(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+{
+	hdmi_tx_set_hdmi_5v();
+	hdmi_tx_init();
+return 0;
+}
 
+U_BOOT_CMD(hdmi_init, CONFIG_SYS_MAXARGS, 0, do_hdmi_init,
+	   "HDMI_INIT sub-system",
+	"hdmit init\n")
+#endif
+#endif
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void){
 	int ret;
+
+	//update env before anyone using it
+	run_command("get_rebootmode; echo reboot_mode=${reboot_mode}; "\
+			"if test ${reboot_mode} = factory_reset; then "\
+			"defenv_reserv aml_dt;setenv upgrade_step 2;save; fi;", 0);
+	run_command("if itest ${upgrade_step} == 1; then "\
+				"defenv_reserv; setenv upgrade_step 2; saveenv; fi;", 0);
+
+#ifndef CONFIG_AML_IRDETECT_EARLY
+	/* after  */
+	run_command("cvbs init;hdmitx hpd", 0);
+	run_command("vout output $outputmode", 0);
+#endif
 	/*add board late init function here*/
 	ret = run_command("store dtb read $dtb_mem_addr", 1);
 	if (ret) {

@@ -23,8 +23,11 @@
 #define PORT_REG_OFFSET   0
 #endif
 
-
+#if ((defined CONFIG_USB_XHCI))
+#define DWC_REG_BASE   0xc9100000
+#else
 #define DWC_REG_BASE  (0xC9000000 + PORT_REG_OFFSET)
+#endif
 
 #define PERI_BASE_ADDR               0xc1100000
 #define ISABASE                      0x01000000
@@ -87,7 +90,9 @@
 // void dwc_modify_reg32( volatile uint32_t *_reg, const uint32_t _clear_mask, const uint32_t _set_mask)
 #define dwc_modify_reg32(x, c, s) 	(*(volatile uint32_t *)(x + DWC_REG_BASE))=( ((dwc_read_reg32(x)) & (~c)) | (s))
 
-#define get_unaligned(ptr)				    (((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
+#define get_unaligned(ptr)      (  ((unsigned long)ptr & 3) ? \
+                                (((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24)) : \
+                                (*(uint32_t*)ptr) )
 #define get_unaligned_16(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8))
 #define get_unaligned_32(ptr)				(((__u8 *)ptr)[0] | (((__u8 *)ptr)[1]<<8) | (((__u8 *)ptr)[2]<<16) | (((__u8 *)ptr)[3]<<24))
 

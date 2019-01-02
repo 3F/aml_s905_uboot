@@ -20,11 +20,28 @@
 
 /*-------------------------------------------------------------------------------*/
 // encoder registers
-#define BUS_TYPE_HIU	0
-#define BUS_TYPE_VCBUS	1
+#define BUS_TYPE_CBUS	0
+#define BUS_TYPE_HIU	1
+#define BUS_TYPE_VCBUS	2
 
+#define CBUS_BASE	0xc1100000
 #define HIU_BASE	0xc883c000
 #define VCBUS_BASE	0xd0100000
+
+#define MESON_CPU_MAJOR_ID_M6		0x16
+#define MESON_CPU_MAJOR_ID_M6TV		0x17
+#define MESON_CPU_MAJOR_ID_M6TVL	0x18
+#define MESON_CPU_MAJOR_ID_M8		0x19
+#define MESON_CPU_MAJOR_ID_MTVD		0x1A
+#define MESON_CPU_MAJOR_ID_M8B		0x1B
+#define MESON_CPU_MAJOR_ID_MG9TV	0x1C
+#define MESON_CPU_MAJOR_ID_M8M2		0x1D
+#define MESON_CPU_MAJOR_ID_GXBB		0x1F
+#define MESON_CPU_MAJOR_ID_GXTVBB	0x20
+#define MESON_CPU_MAJOR_ID_GXL		0x21
+
+
+#define ASSIST_HW_REV           0x1f53
 
 #define HHI_HDMI_PLL_CNTL 		0x10c8
 #define HHI_HDMI_PLL_CNTL2		0x10c9

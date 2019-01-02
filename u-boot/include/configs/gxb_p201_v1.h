@@ -56,11 +56,24 @@
 #define CONFIG_AML_MESON_SERIAL   1
 #define CONFIG_SERIAL_MULTI		1
 
+//Enable ir remote wake up for bl30
+//#define CONFIG_IR_REMOTE
+//#define CONFIG_AML_IRDETECT_EARLY
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_CNT 4
+#define CONFIG_IR_REMOTE_USE_PROTOCOL 0         // 0:nec  1:duokan  2:Toshiba 3:rca 4:rcmm
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL1 0XE51AFB04 //amlogic tv ir --- power
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL2 0XBB44FB04 //amlogic tv ir --- ch+
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL3 0xF20DFE01 //amlogic tv ir --- ch-
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL4 0xBA45BD02
+
+#define CONFIG_IR_REMOTE_POWER_UP_KEY_VAL5 0x3ac5bd02
+
 /* args/envs */
 #define CONFIG_SYS_MAXARGS  64
 #define CONFIG_EXTRA_ENV_SETTINGS \
         "firstboot=1\0"\
         "upgrade_step=0\0"\
+        "jtag=apee\0"\
         "loadaddr=1080000\0"\
         "outputmode=1080p60hz\0" \
         "hdmimode=1080p60hz\0" \
@@ -73,7 +86,7 @@
         "display_color_fg=0xffff\0" \
         "display_color_bg=0\0" \
         "dtb_mem_addr=0x1000000\0" \
-        "fb_addr=0x3f800000\0" \
+        "fb_addr=0x3d800000\0" \
         "fb_width=1920\0" \
         "fb_height=1080\0" \
         "usb_burning=update 1000\0" \
@@ -83,25 +96,21 @@
         "sdc_burning=sdc_burn ${sdcburncfg}\0"\
         "wipe_data=successful\0"\
         "wipe_cache=successful\0"\
+        "recovery_part=recovery\0"\
+        "recovery_offset=0\0"\
+        "cvbs_drv=0\0"\
         "initargs="\
-            "rootfstype=ramfs init=/init console=ttyS0,115200 no_console_suspend earlyprintk=aml-uart,0xc81004c0 ramoops.mem_address=0x20000000 ramoops.mem_size=0x100000 ramoops.record_size=0x8000 ramoops.console_size=0x4000 androidboot.selinux=permissive"\
+            "rootfstype=ramfs init=/init console=ttyS0,115200 no_console_suspend earlyprintk=aml-uart,0xc81004c0 ramoops.pstore_en=1 ramoops.record_size=0x8000 ramoops.console_size=0x4000 androidboot.selinux=enforcing"\
             "\0"\
         "upgrade_check="\
             "echo upgrade_step=${upgrade_step}; "\
             "if itest ${upgrade_step} == 3; then "\
                 "run init_display; run storeargs; run update;"\
-            "else if itest ${upgrade_step} == 1; then "\
-                "defenv_reserv; setenv upgrade_step 2; saveenv;"\
-            "fi;fi;"\
+            "else fi;"\
             "\0"\
-	    "bootmode_check="\
-            "get_rebootmode; echo reboot_mode=${reboot_mode};"\
-            "if test ${reboot_mode} = factory_reset; then "\
-                "defenv_reserv aml_dt;setenv upgrade_step 2; save;"\
-            "fi;"\
-            "\0" \
-        "storeargs="\
-            "setenv bootargs ${initargs} logo=${display_layer},loaded,${fb_addr},${outputmode} hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${cecconfig} androidboot.firstboot=${firstboot}; "\
+    "storeargs="\
+            "setenv bootargs ${initargs} logo=${display_layer},loaded,${fb_addr},${outputmode} vout=${outputmode},enable hdmimode=${hdmimode} cvbsmode=${cvbsmode} hdmitx=${cecconfig} cvbsdrv=${cvbs_drv} androidboot.firstboot=${firstboot} jtag=${jtag}; "\
+	"setenv bootargs ${bootargs} androidboot.hardware=amlogic;"\
             "run cmdline_keys;"\
             "\0"\
         "switch_bootmode="\
@@ -115,7 +124,7 @@
             "fi;fi;fi;"\
             "\0" \
         "storeboot="\
-            "if imgread kernel boot ${loadaddr}; then store dtb read $dtb_mem_addr; bootm ${loadaddr}; fi;"\
+            "if imgread kernel boot ${loadaddr}; then bootm ${loadaddr}; fi;"\
             "run update;"\
             "\0"\
         "factory_reset_poweroff_protect="\
@@ -156,19 +165,22 @@
             "if fatload mmc 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
             "if fatload mmc 0 ${loadaddr} recovery.img; then "\
                     "if fatload mmc 0 ${dtb_mem_addr} dtb.img; then echo sd dtb.img loaded; fi;"\
+                    "wipeisb; "\
                     "bootm ${loadaddr};fi;"\
             "\0"\
         "recovery_from_udisk="\
             "if fatload usb 0 ${loadaddr} aml_autoscript; then autoscr ${loadaddr}; fi;"\
             "if fatload usb 0 ${loadaddr} recovery.img; then "\
                 "if fatload usb 0 ${dtb_mem_addr} dtb.img; then echo udisk dtb.img loaded; fi;"\
+                "wipeisb; "\
                 "bootm ${loadaddr};fi;"\
             "\0"\
         "recovery_from_flash="\
-            "if imgread kernel recovery ${loadaddr}; then bootm ${loadaddr}; fi"\
+            "setenv bootargs ${bootargs} aml_dt=${aml_dt} recovery_part={recovery_part} recovery_offset={recovery_offset};"\
+            "if imgread kernel ${recovery_part} ${loadaddr} ${recovery_offset}; then wipeisb; bootm ${loadaddr}; fi"\
             "\0"\
         "init_display="\
-            "hdmitx hpd;osd open;osd clear;vout output ${outputmode};imgread pic logo bootup $loadaddr;bmp display $bootup_offset;bmp scale"\
+            "osd open;osd clear;imgread pic logo bootup $loadaddr;bmp display $bootup_offset;bmp scale"\
             "\0"\
         "cmdline_keys="\
             "if keyman init 0x1234; then "\
@@ -192,7 +204,6 @@
 #define CONFIG_PREBOOT  \
             "run factory_reset_poweroff_protect;"\
             "run upgrade_check;"\
-            "run bootmode_check;"\
             "run init_display;"\
             "run storeargs;"\
             "run upgrade_key;" \
@@ -226,7 +237,10 @@
 #define CONFIG_DDR_ZQ_POWER_DOWN
 #define CONFIG_DDR_POWER_DOWN_PHY_VREF
 /* ddr detection */
-#define CONFIG_DDR_SIZE_AUTO_DETECT		0
+#define CONFIG_DDR_SIZE_AUTO_DETECT		0 //0:disable, 1:enable
+/* ddr functions */
+#define CONFIG_CMD_DDR_D2PLL			0 //0:disable, 1:enable. d2pll cmd
+#define CONFIG_CMD_DDR_TEST				0 //0:disable, 1:enable. ddrtest cmd
 
 /* storage: emmc/nand/sd */
 #define	CONFIG_STORE_COMPATIBLE 1
@@ -244,6 +258,8 @@
 	#define CONFIG_GENERIC_MMC 1
 	#define CONFIG_CMD_MMC 1
 	#define	CONFIG_SYS_MMC_ENV_DEV 1
+	#define CONFIG_EMMC_DDR52_EN 1
+	#define CONFIG_EMMC_DDR52_CLK 35000000
 #endif
 
 #define	CONFIG_PARTITIONS 1
@@ -293,15 +309,12 @@
 /* net */
 #define CONFIG_CMD_NET   1
 #if defined(CONFIG_CMD_NET)
-	#define CONFIG_AML_ETHERNET 1
+	#define CONFIG_DESIGNWARE_ETH 1
+	#define CONFIG_PHYLIB	1
 	#define CONFIG_NET_MULTI 1
 	#define CONFIG_CMD_PING 1
 	#define CONFIG_CMD_DHCP 1
 	#define CONFIG_CMD_RARP 1
-	//#define CONFIG_NET_RGMII
-	//	//#define CONFIG_NET_RMII_CLK_EXTERNAL //use external 50MHz clock source
-	#define CONFIG_AML_ETHERNET    1                   /*to link /driver/net/aml_ethernet.c*/
-	#define IP101PHY    1                   /*to link /driver/net/aml_ethernet.c*/
 	#define CONFIG_HOSTNAME        arm_gxbb
 	#define CONFIG_ETHADDR         00:15:18:01:81:31   /* Ethernet address */
 	#define CONFIG_IPADDR          10.18.9.97          /* Our ip address */
@@ -343,6 +356,9 @@
 
 /* other functions */
 #define CONFIG_NEED_BL301	1
+#define CONFIG_NEED_BL32	1
+#define CONFIG_CMD_RSVMEM	1
+#define CONFIG_FIP_IMG_SUPPORT	1
 #define CONFIG_BOOTDELAY	1 //delay 1s
 #define CONFIG_SYS_LONGHELP 1
 #define CONFIG_CMD_MISC     1
@@ -373,6 +389,14 @@
 
 //build with uboot auto test
 //#define CONFIG_AML_UBOOT_AUTO_TEST 1
+
+//board customer ID
+//#define CONFIG_CUSTOMER_ID  (0x6472616F624C4D41)
+
+#if defined(CONFIG_CUSTOMER_ID)
+  #undef CONFIG_AML_CUSTOMER_ID
+  #define CONFIG_AML_CUSTOMER_ID  CONFIG_CUSTOMER_ID
+#endif
 
 #endif
 

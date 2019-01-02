@@ -61,7 +61,7 @@ int v2_key_read(const char* keyName, u8* keyVal, const unsigned keyValLen, char*
  */
 unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyValLen, char* errInfo);
 
-#define DDR_MEM_ADDR_START  ( CONFIG_SYS_SDRAM_BASE + (16<<20) )
+#define DDR_MEM_ADDR_START  ( 0x073<<20 )
 
 //  |<---Back 2M---->|<------------USB transfer Buf 64 ----------->|<--Backed sparse format info for verify-->|
 //      Back buf                          Transfer buf
@@ -104,13 +104,13 @@ unsigned v2_key_burn(const char* keyName, const u8* keyVal, const unsigned keyVa
 #define OPTIMUS_BOOTLOADER_MAX_SZ               (2U<<20)//max size is 2M ??
 
 #define OPTIMUS_SHA1SUM_BUFFER_ADDR             OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR
-#define OPTIMUS_SHA1SUM_BUFFER_LEN              (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/8) //16M each time
+#define OPTIMUS_SHA1SUM_BUFFER_LEN              (OPTIMUS_DOWNLOAD_TRANSFER_BUF_TOTALSZ/8) //8M each time
 
 //As key size < 64K, So buffer [OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW, OPTIMUS_DOWNLOAD_TRANSFER_BUF_ADDR) not used when download key
 #define OPTIMUS_KEY_DECRYPT_BUF                 OPTIMUS_SPARSE_IMG_LEFT_DATA_ADDR_LOW//buffer for decrypt the key
 #define OPTIMUS_KEY_DECRYPT_BUF_SZ              OPTIMUS_DOWNLOAD_SLOT_SZ
 
-#define OPTIMUS_DTB_LOAD_ADDR                   DDR_MEM_ADDR_START
+#define OPTIMUS_DTB_LOAD_ADDR                   CONFIG_DTB_MEM_ADDR
 
 #define COMPILE_TYPE_CHK(expr, t)       typedef char t[(expr) ? 1 : -1]
 #define COMPILE_TIME_ASSERT(expr)       typedef char assert_type[(expr) ? 1 : -1]
@@ -161,6 +161,7 @@ void optimus_poweroff(void);
 int optimus_burn_complete(const int choice);
 int is_the_flash_first_burned(void);
 int optimus_set_burn_complete_flag(void);//set 'upgrade_step 1' after burnning success
+int platform_busy_increase_un_reported_size(const unsigned nBytes);
 
 #define OPTIMUS_WORK_MODE_NONE            0
 #define OPTIMUS_WORK_MODE_USB_UPDATE      (0xefe5)

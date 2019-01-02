@@ -149,13 +149,16 @@ static int optimus_download_bootloader_image(struct ImgBurnInfo* pDownInfo, u32 
         return 0;
     }
 #endif
-    if (size > (1U<<20)) {
-        DWN_ERR("uboot.bin size 0x%llx > 1M unsupported\n", size);
+    if (size > (2U<<20)) {
+        DWN_ERR("uboot.bin size 0x%llx > 2M unsupported\n", size);
         return 0;
     }
 
-    size = size <= 0x60000 ? 0x60000 : (1U<<20);//384K when non-secure_os, 1M when secure_os
+    size += (1U<<20) -1;
+    size >>= 20;
+    size <<= 20;
     ret = store_boot_write((unsigned char*)data, 0, size);
+    DWN_MSG("align bootloader sz from 0x%x to 0x%llx\n", dataSzReceived, size);
 
     return ret ? 0 : dataSzReceived;
 }
@@ -197,6 +200,7 @@ u32 optimus_cb_simg_write_media(const unsigned destAddrInSec, const unsigned dat
         DWN_ERR("Fail to write to media, ret = %d\n", ret);
         return 0;
     }
+    platform_busy_increase_un_reported_size(dataSzInBy);
 
     return dataSzInBy;
 }
@@ -233,6 +237,7 @@ static u32 optimus_download_normal_image(struct ImgBurnInfo* pDownInfo, u32 data
         DWN_ERR("Fail to write to media\n");
         return 0;
     }
+    platform_busy_increase_un_reported_size(dataSz);
 
     pDownInfo->nextMediaOffset += dataSz;
 
@@ -428,6 +433,7 @@ static int optimus_storage_read(struct ImgBurnInfo* pDownInfo, u64 addrOrOffsetI
                 else
                 {
                     ret = store_read_ops(partName, buff, addrOrOffsetInBy, (u64)readSzInBy);
+                    platform_busy_increase_un_reported_size(readSzInBy);
                 }
                 if (ret) {
                     if (errInfo) sprintf(errInfo, "Read failed\n") ;
@@ -729,14 +735,13 @@ int optimus_storage_init(int toErase)
                 fdtAddr = get_multi_dt_entry(fdtAddr);
 #endif// #ifdef CONFIG_MULTI_DTB
                 ret = fdt_check_header((char*)fdtAddr);
-                if (ret) {
+                unsigned fdtsz    = fdt_totalsize((char*)fdtAddr);
+                if (ret || !fdtsz || fdtsz > _dtb_is_loaded) {
                         DWN_ERR("Fail in fdt check header\n");
                         return __LINE__;
                 }
-                /*setenv("dtb_mem_addr", simple_itoa(fdtAddr));*/
-                char _cmd[64];
-                sprintf(_cmd, "setenv dtb_mem_addr 0x%lx", fdtAddr);//itoa is decimal, not mistake if others specify 16 in strtoul
-                run_command(_cmd, 0);
+                if (fdtsz < _dtb_is_loaded)
+                        memmove((char*)dtbLoadedAddr, (char*)fdtAddr, fdtsz);
         }
     }
 

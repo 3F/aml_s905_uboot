@@ -39,6 +39,7 @@
 #include <amlogic/hdmi.h>
 #endif
 #include <asm/arch/eth_setup.h>
+#include <phy.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -109,12 +110,12 @@ static void setup_net_chip(void)
 }
 
 extern struct eth_board_socket* eth_board_setup(char *name);
-extern int aml_eth_init(bd_t *bis);
+extern int designware_initialize(ulong base_addr, u32 interface);
 int board_eth_init(bd_t *bis)
 {
 	setup_net_chip();
 	udelay(1000);
-	aml_eth_init(bis);
+	designware_initialize(ETH_BASE, PHY_INTERFACE_MODE_RGMII);
 
 	return 0;
 }
@@ -418,6 +419,18 @@ int board_init(void)
 #ifdef CONFIG_BOARD_LATE_INIT
 int board_late_init(void){
 	int ret;
+
+	//update env before anyone using it
+	run_command("get_rebootmode; echo reboot_mode=${reboot_mode}; "\
+			"if test ${reboot_mode} = factory_reset; then "\
+			"defenv_reserv aml_dt;setenv upgrade_step 2;save; fi;", 0);
+	run_command("if itest ${upgrade_step} == 1; then "\
+			"defenv_reserv; setenv upgrade_step 2; saveenv; fi;", 0);
+
+	/* after  */
+	run_command("cvbs init;hdmitx hpd", 0);
+	run_command("vout output $outputmode", 0);
+
 	/*add board late init function here*/
 	ret = run_command("store dtb read $dtb_mem_addr", 1);
 	if (ret) {

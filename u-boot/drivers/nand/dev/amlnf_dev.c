@@ -910,7 +910,7 @@ struct amlnf_dev* aml_nftl_get_dev(char * name)
 	struct amlnf_dev * nf_dev = NULL;
 
 	list_for_each_entry(nf_dev, &nf_dev_list, list){
-		if (!strncmp((char*)nf_dev->name, name, strlen(nf_dev->name))) {
+		if (!strcmp((char*)nf_dev->name, name)) {
 				aml_nand_dbg("nand get nftl dev %s ",name);
 				return nf_dev;
 		}
@@ -923,8 +923,10 @@ void show_ldev_list(void)
 {
 	struct amlnf_dev * nf_dev = NULL;
 	int i = 0;
+	printf("logic partitions table, in sectors\n");
 	list_for_each_entry(nf_dev, &nf_dev_list, list) {
-		printf("%d: %s: %llx\n", i++, (char*)nf_dev->name, nf_dev->size_sector);
+		printf("%d: %s: 0x%llx  0x%llx\n", i++, (char*)nf_dev->name,
+			nf_dev->offset_sector, nf_dev->size_sector);
 	}
 }
 

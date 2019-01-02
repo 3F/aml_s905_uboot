@@ -23,6 +23,9 @@
 
 #include <amlogic/vmode.h>
 #include <amlogic/vout.h>
+#ifdef CONFIG_AML_LCD
+#include <amlogic/aml_lcd.h>
+#endif
 
 #define VOUT_LOG_DBG 0
 #define VOUT_LOG_TAG "[VOUT]"
@@ -112,7 +115,7 @@ static const vout_set_t vout_sets[] = {
 		.height            = 2160,
 	},
 	{ /* VMODE_4K2K_SMPTE */
-		.name              = "smpte24hz",
+		.name              = "smpte",
 		.mode              = VMODE_4K2K_SMPTE,
 		.width             = 4096,
 		.height            = 2160,
@@ -152,6 +155,12 @@ static const vout_set_t vout_sets[] = {
 		.mode              = VMODE_FHDVGA,
 		.width             = 1920,
 		.height            = 1080,
+	},
+	{ /* VMODE_LCD */
+		.name              = "panel",
+		.mode              = VMODE_LCD,
+		.width             = 1280,
+		.height            = 720,
 	},
 };
 
@@ -225,7 +234,7 @@ static int vout_find_height_by_name(const char* name)
 
 static void vout_vinfo_init(void)
 {
-	tv_info.vd_base = (void *)simple_strtoul(getenv("fb_addr"), NULL, 0);
+	tv_info.vd_base = (void *)get_fb_addr();
 	tv_info.vl_col = simple_strtoul(getenv("display_width"), NULL, 0);
 	tv_info.vl_row = simple_strtoul(getenv("display_height"), NULL, 0);
 	tv_info.vl_bpix = simple_strtoul(getenv("display_bpp"), NULL, 10);
@@ -248,12 +257,26 @@ static void vout_vmode_init(void)
 	int vmode = -1;
 	ulong width = 0;
 	ulong height = 0;
+#ifdef CONFIG_AML_LCD
+	struct aml_lcd_drv_s *lcd_drv;
+#endif
 
 	outputmode = getenv("outputmode");
 	vmode = vout_find_mode_by_name(outputmode);
 	vout_set_current_vmode(vmode);
-	width = vout_find_width_by_name(outputmode);
-	height = vout_find_height_by_name(outputmode);
+	switch (vmode) {
+#ifdef CONFIG_AML_LCD
+	case VMODE_LCD:
+		lcd_drv = aml_lcd_get_driver();
+		width = lcd_drv->lcd_config->lcd_basic.h_active;
+		height = lcd_drv->lcd_config->lcd_basic.v_active;
+		break;
+#endif
+	default:
+		width = vout_find_width_by_name(outputmode);
+		height = vout_find_height_by_name(outputmode);
+		break;
+	}
 	vout_reg_write(VPP_POSTBLEND_H_SIZE, width);
 	vout_axis_init(width, height);
 }
@@ -331,7 +354,7 @@ static int get_window_axis(int *axis)
 		axis[1] = getenv_int("2160p_y", 0);
 		axis[2] = getenv_int("2160p_w", 3840);
 		axis[3] = getenv_int("2160p_h", 2160);
-	} else if (strcmp(mode, "smpte24hz") == 0) {
+	} else if (strncmp(mode, "smpte",5) == 0) {
 		axis[0] = getenv_int("4k2ksmpte_x", 0);
 		axis[1] = getenv_int("4k2ksmpte_y", 0);
 		axis[2] = getenv_int("4k2ksmpte_w", 4096);
@@ -362,11 +385,6 @@ vidinfo_t *vout_get_current_vinfo(void)
 	vidinfo_t *info = &tv_info;
 
 	vout_logl();
-
-#if defined CONFIG_VIDEO_AMLLCD
-	extern vidinfo_t tv_info;
-	info = &panel_info;
-#endif
 
 	return info;
 }

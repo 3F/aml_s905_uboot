@@ -15,6 +15,7 @@
 #include<partition_table.h>
 #include <libfdt.h>
 #include <linux/string.h>
+#include <asm/cpu_id.h>
 
 #if defined(CONFIG_AML_NAND)
 extern int amlnf_init(unsigned flag);
@@ -408,7 +409,7 @@ static int do_store_init(cmd_tbl_t * cmdtp, int flag, int argc, char * const arg
                     }
                     sprintf(str, "amlmmc erase %d", CONFIG_SYS_MMC_ENV_DEV);
                     MsgP("amlmmc erase %d", CONFIG_SYS_MMC_ENV_DEV);
-                    ret = run_command(cmd, 0);
+                    ret = run_command(str, 0);
                 }
 
                 return ret;
@@ -646,10 +647,10 @@ static int do_store_erase(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
     off = off;
     area = argv[2];
     if (strcmp(area, "boot") == 0) {
+            off =  argc > 3 ? simple_strtoul(argv[3], NULL, 16) : 0;
+            size =  argc > 4 ? simple_strtoul(argv[4], NULL, 16) : 0x60000;
         if (device_boot_flag == NAND_BOOT_FLAG) {
             #if defined(CONFIG_AML_NAND)
-            off =  simple_strtoul(argv[3], NULL, 16);
-            size =  simple_strtoul(argv[4], NULL, 16);
             store_dbg("NAND BOOT,erase uboot : %s %d  off =%llx ,size=%llx",__func__,__LINE__, off, size);
 
             ret = run_command("amlnf deverase boot 0",0);
@@ -662,9 +663,6 @@ static int do_store_erase(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
             }
             return ret;
         }else if((device_boot_flag==SPI_EMMC_FLAG)||(device_boot_flag==SPI_NAND_FLAG)){
-            off =  simple_strtoul(argv[3], NULL, 16);
-            size =  simple_strtoul(argv[4], NULL, 16);
-
             store_dbg("SPI BOOT,erase uboot :  %s %d  off =%llx ,size=%llx",__func__,__LINE__,off,size);
 
             ret = run_command("sf probe 2",0);
@@ -680,9 +678,6 @@ static int do_store_erase(cmd_tbl_t * cmdtp, int flag, int argc, char * const ar
             }
             return ret;
         }else if(device_boot_flag == EMMC_BOOT_FLAG){
-            off =  simple_strtoul(argv[3], NULL, 16);
-            size =  simple_strtoul(argv[4], NULL, 16);
-
             store_dbg("MMC BOOT,erase uboot :  %s %d  off =%llx ,size=%llx",__func__,__LINE__,off,size);
 
             sprintf(str, "amlmmc  erase bootloader");
@@ -957,6 +952,7 @@ static int do_store_rom_write(cmd_tbl_t * cmdtp, int flag, int argc, char * cons
     char	str[128];
     int ret = 0;
     int i = 0;
+    cpu_id_t cpu_id = get_cpu_id();
 
     if (argc < 5) return CMD_RET_USAGE;
 
@@ -1011,6 +1007,8 @@ static int do_store_rom_write(cmd_tbl_t * cmdtp, int flag, int argc, char * cons
         tmp_buf[511]=0;
 #endif
 #endif// #if defined(CONFIG_AML_SECU_BOOT_V2)
+		if (cpu_id.family_id >= MESON_CPU_MAJOR_ID_GXL)
+			off += 512;
         sprintf(str, "amlmmc  write bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
         store_dbg("command: %s\n", str);
         ret = run_command(str, 0);
@@ -1074,6 +1072,7 @@ static int do_store_rom_read(cmd_tbl_t * cmdtp, int flag, int argc, char * const
     char	str[128];
     int ret = 0;
     int i = 0;
+    cpu_id_t cpu_id = get_cpu_id();
 
     if (argc < 5) return CMD_RET_USAGE;
 
@@ -1107,6 +1106,8 @@ static int do_store_rom_read(cmd_tbl_t * cmdtp, int flag, int argc, char * const
         }
         return ret;
     }else if (device_boot_flag==EMMC_BOOT_FLAG){
+       if ( cpu_id.family_id >= MESON_CPU_MAJOR_ID_GXL)
+                off += 512;
         store_dbg("MMC BOOT, %s %d \n",__func__,__LINE__);
         sprintf(str, "amlmmc  read bootloader 0x%llx  0x%llx  0x%llx", addr, off, size);
         store_dbg("command: %s\n", str);

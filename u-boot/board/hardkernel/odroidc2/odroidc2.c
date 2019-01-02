@@ -36,6 +36,7 @@ extern int board_get_recovery_message(void);
 #define GPIO_OTG_PWREN		124
 #define GPIO_TF3V3		35	/* GPIOY_12 */
 #define GPIO_TF1V8		122	/* GPIOAO_3 */
+#define GPIO_HUB_RST		123	/* GPIOAO_4 */
 
 int serial_set_pin_port(unsigned long port_base)
 {
@@ -448,6 +449,12 @@ int board_init(void)
 	 */
 	gpio_request(GPIO_SW_UMS, "sw_ums");
 	gpio_direction_input(GPIO_SW_UMS);
+
+	gpio_request(GPIO_HUB_RST, "hub_rst");
+	gpio_direction_output(GPIO_HUB_RST, 0);
+	mdelay(20);
+	gpio_direction_output(GPIO_HUB_RST, 1);
+	mdelay(20);
 
 #if defined(CONFIG_USB_DWC_OTG_HCD)
 	board_usb_init(&usb_config0, BOARD_USB_MODE_SLAVE);
