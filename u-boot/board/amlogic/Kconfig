@@ -15,6 +15,10 @@ config PXP_EMULATOR
 	bool "Support pxp environment"
 	default n
 
+config ODROID_C2
+	bool "Support Hardkernel ODROID-C2 board"
+ 	default n
+
 if GXB_SKT_V1
 source "board/amlogic/gxb_skt_v1/Kconfig"
 endif
@@ -25,4 +29,8 @@ endif
 
 if GXB_P201_V1
 source "board/amlogic/gxb_p201_v1/Kconfig"
+endif
+
+if ODROID_C2
+source "board/hardkernel/odroidc2/Kconfig"
 endif

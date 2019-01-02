@@ -327,17 +327,17 @@ ddr_set_t __ddr_setting = {
 	.t_pub_dx1gcr			= {0},  //PUB DX1GCRx
 	.t_pub_dx2gcr			= {0},  //PUB DX2GCRx
 	.t_pub_dx3gcr			= {0},  //PUB DX3GCRx
-	.t_pub_dcr				= 0X8B,     //PUB DCR
+	.t_pub_dcr				= 0XB,     //PUB DCR
 	.t_pub_dtar				= (0X0 | (0X0 <<12) | (0 << 28)),
-	.t_pub_dsgcr			= 0x020645a, //0x020641a, 2015.09.21, shift DQS gate 1/2 earlier and 1/2 later
+	.t_pub_dsgcr			= 0x020645a,
 	//.t_pub_zq0pr			= 0x7b,   //PUB ZQ0PR
 	//.t_pub_zq1pr			= 0x7b,   //PUB ZQ1PR
 	//.t_pub_zq2pr			= 0x7b,   //PUB ZQ2PR
 	//.t_pub_zq3pr			= 0x7b,   //PUB ZQ3PR
-	.t_pub_zq0pr			= 0x1d,   //PUB ZQ0PR
-	.t_pub_zq1pr			= 0x19,   //PUB ZQ1PR
-	.t_pub_zq2pr			= 0x19,   //PUB ZQ2PR
-	.t_pub_zq3pr			= 0x19,   //PUB ZQ3PR
+	.t_pub_zq0pr			= 0x69,   //PUB ZQ0PR
+	.t_pub_zq1pr			= 0x69,   //PUB ZQ1PR
+	.t_pub_zq2pr			= 0x69,   //PUB ZQ2PR
+	.t_pub_zq3pr			= 0x69,   //PUB ZQ3PR
 
 	/* pctl0 defines */
 	/* pctl1 use same define as pctl0 */
@@ -370,7 +370,8 @@ ddr_set_t __ddr_setting = {
 	.t_pctl0_dfiodtcfg		= (1<<3)|(1<<11),
 	.t_pctl0_dfiodtcfg1		= (0x0 | (0x6 << 16)),
 	.t_pctl0_dfilpcfg0		= ( 1 | (3 << 4) | (1 << 8) | (3 << 12) | (7 <<16) | (1 <<24) | ( 3 << 28)),
-	.t_pub_acbdlr0          = 0x10,  //2015.09.21 CK0 delay 16 cycles
+
+	.t_pub_acbdlr0          = 0x10,  //2015.09.21 add for  CK0 delay fine tune
 };
 
 pll_set_t __pll_setting = {

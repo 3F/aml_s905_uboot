@@ -1,0 +1,12 @@
+--- board/amlogic/Kconfig
++++ board/amlogic/Kconfig
+@@ -41,6 +41,9 @@
+ 
+ config SUPPORT_CUSOTMER_BOARD
+ 	bool "Customer board support"
++
++config ODROID_C2
++	bool "Support Hardkernel ODROID-C2 board"
+ 	default n
+ 
+ if GXB_SKT_V1

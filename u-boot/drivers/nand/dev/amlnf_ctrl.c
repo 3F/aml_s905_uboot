@@ -700,7 +700,7 @@ int aml_sys_info_error_handle(struct amlnand_chip *aml_chip)
 
 #ifdef AML_NAND_UBOOT
 /*fixme, */
-extern int info_disprotect;
+int info_disprotect = 0;
 
 void amlnf_disprotect(char * name)
 {

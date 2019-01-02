@@ -28,11 +28,11 @@
 #include <mmc.h>
 #include <partition_table.h>
 #include <emmc_partitions.h>
+#include <linux/sizes.h>
 
 extern int mmc_key_erase(void);
 extern int find_dev_num_by_partition_name (char *name);
 #define DTB_BLOCK_CNT		1024
-#define SZ_1M				0x100000
 #define DTB_ADDR_SIZE		(SZ_1M * 40)
 #define KEY_SIZE_CNT		()
 #define KEY_ADDR_SIZE		(SZ_1M * 40 + 16 * 1024)
