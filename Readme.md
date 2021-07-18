@@ -1,9 +1,15 @@
 
 ```
-Copyright (c) 2018  Denis Kuzmin <entry.reg@gmail.com> :: github.com/3F
+Copyright (c) 2018  Denis Kuzmin <x-3F@outlook.com> github/3F
 ```
 
-my personal sketch ~February 2018
+[ [ ☕ ](https://3F.github.io/Donation/) ]
+
+My personal experiments since ~February 2018 thanks to my personal reverse engineering because the manufacturer of the board refused to provide the source code even though it is under GPL.
+
+*Nobody has been hurt except my time.*
+
+⚠ Everything below is at your own risk. Enjoy.
 
 ```
 ~ DDR init; h224_v2.01_M9S-PRO ~
@@ -662,7 +668,13 @@ PXP_defconfig is a wrapper of skt with enabled .pxp emulator (same instruction f
 ## _
 
 ```
-Copyright (c) 2018  Denis Kuzmin <entry.reg@gmail.com> :: github.com/3F
+Copyright (c) 2018  Denis Kuzmin <x-3F@outlook.com> github/3F
 ```
 
-*my personal sketch ~February 2018*
+[ [ ☕ ](https://3F.github.io/Donation/) ]
+
+My personal experiments since ~February 2018 thanks to my personal reverse engineering because the manufacturer of the board refused to provide the source code even though it is under GPL.
+
+*Nobody has been hurt except my time.*
+
+⚠ Everything above is at your own risk. Enjoy.
